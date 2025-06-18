@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="assets/icons/cdn.css">
+</head>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+    ::-webkit-scrollbar{
+        width: 0px;
+    }
+    *{
+        position: relative;
+        margin: 0;
+        padding: 0;
+        font-family: calibri;
+        user-select: none;
+        -webkit-user-drag: none;
+    }
+    body{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        box-sizing: border-box;
+        width: 100vw;
+        height: 100vh;
+    }
+    body section{
+        display: flex;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        gap: 0.5rem;
+    }
+    body section .main-data{
+        display: flex;
+        width: 300px;
+        flex-direction: column;
+        height: 100%;
+        gap: 0.5rem;
+    }
+    body section .main-data .top-header{
+        display: flex;
+        width: 100%;
+        gap: 0.5rem;
+    }
+    body section .main-data .top-header i{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        aspect-ratio: 1/1;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 1rem;
+        font-size: 1rem;
+    }
+    body section .main-data .top-header p{
+        display: flex;
+        align-items: center;
+        /* justify-content: center; */
+        padding-left: 1rem;
+        flex: 1;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        /* letter-spacing: 0.1rem; */
+    }
+    body section .main-data .pickup-locations{
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-height: 100%;
+        overflow-y: scroll;
+        padding: 0.5rem;
+        border-radius: 1rem;
+        background-color: rgba(0, 0, 0, 0.05);
+        box-sizing: border-box;
+    }
+    body section .main-data .pickup-locations .pickup-card{
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        background-color: white;
+        border-radius: 1rem;
+        margin-top: 4rem;
+        border-top-left-radius: 0;
+    }
+    body section .main-data .pickup-locations .pickup-card .pickup-title{
+        width: 100%;
+        height: 2.5rem;
+        display: flex;
+        /* gap: 1rem; */
+        border-radius: 1rem;
+        /* background-color: rgb(232, 147, 147); */
+        box-sizing: border-box;
+        align-items: center;
+        overflow: visible;
+        transform: translateY(-100%);
+        border-bottom-left-radius: 0;
+        align-items: flex-end;
+    }
+    body section .main-data .pickup-locations .pickup-card .pickup-title .btn-act{
+        display: flex;
+        align-items: center;
+        width: fit-content;
+        height: 100%;
+        border-bottom-left-radius: 1.5rem;
+        /* background-color: red; */
+        padding-left: 0.4rem;
+        /* padding-bottom: 0.5rem; */
+        box-shadow: -0rem 1rem white;
+        height: 2.5rem;
+        /* margin-top: -1rem; */
+    }
+    body section .main-data .pickup-locations .pickup-card .pickup-title .btn-act::before,
+    body section .main-data .pickup-locations .pickup-card .pickup-title .btn-act::after{
+        width: 3rem;
+        aspect-ratio: 1/1;
+        content: "";
+        background-color: white;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        border-top-right-radius: 2rem;
+    }
+    body section .main-data .pickup-locations .pickup-card .pickup-title .btn-act::before{
+        border-radius: 0;
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    body .button{
+        width: fit-content;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 2rem;
+        background-color: rgb(236, 216, 177);
+        border-radius: 4rem;
+        box-shadow: 2px 1px 20px rgb(236, 193, 177);
+        cursor: pointer;
+        z-index: 2;
+        font-size: 0.8rem;
+    }
+    body section .main-data .pickup-locations .pickup-card .pickup-title .main-title{
+        flex: 1;
+        background-color: white;
+        height: 100%;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+        padding-inline: 1rem;
+        align-items: center;
+        display: flex;
+    }
+    body section .main-data .pickup-locations .pickup-card .pickup-title .main-title h1{
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    .pickup-locations .pickup-card .pickup-title .main-title .hanger{
+        position: absolute;
+        top: -1.2vw;
+        left: 0rem;
+        font-size: 0.8vw;
+        color: rgba(0, 0, 0, 0.2);
+    }
+    .pickup-locations .pickup-card[active] .pickup-title .main-title h4{
+        display: none;
+    }
+    .pickup-card .pickup-content{
+        display: flex;
+        width: 100%;
+        padding: 1rem;
+        padding-top: 0rem;
+        margin-top: -1.2rem;
+        flex-direction: column;
+        box-sizing: border-box;
+    }
+    .pickup-card .pickup-content .p2p{
+        background-color: rgba(0, 0, 0, 0.2);
+        width: 100%;
+        height: 0.2rem;
+        box-sizing: border-box;
+        border-radius: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    .pickup-card .pickup-content .p2p::before,
+    .pickup-card .pickup-content .p2p::after{
+        content: "";
+        width: 0.3rem;
+        aspect-ratio: 1/1;
+        position: absolute;
+        border: 0.4rem solid white;
+        box-shadow: 0 0 0 1px rgb(156, 206, 156);
+        background-color: rgb(156, 206, 156);
+        transform: translateY(-50%);
+        top: 50%;
+        left: 0;
+        border-radius: 50%;
+    }
+    .pickup-card .pickup-content .p2p::before{
+        left: 100%;
+        transform: translate(-100%, -50%);
+        filter: grayscale();
+    }
+    .pickup-card .pickup-content .p2p i{
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        align-items: center;
+    }
+    .pickup-card .pickup-content .p2p i::before{
+        width: 1.5rem;
+        height: 1.5rem;
+        background-color: rgb(156, 206, 156);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transform: translateX(-0%);
+        flex-shrink: 0;
+        font-size: 0.8rem;
+        z-index: 1;
+    }
+    .pickup-card .pickup-content .p2p i p{
+        content: "";
+        width: 100%;
+        background-color: rgb(156, 206, 156);
+        height: 100%;
+    }
+    .pickup-card .pickup-content .pickup-data{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem 1rem;
+        margin-bottom: 0.8rem;
+    }
+    .pickup-card .pickup-content .pickup-data .data{
+        display: flex;
+        flex-direction: column;
+    }
+    .pickup-card .pickup-content .pickup-data p{
+        font-size: 0.6rem;
+        color: rgba(0, 0, 0, 0.4);
+    }
+    .pickup-card .pickup-content .pickup-data h4{
+        font-weight: 100;
+        font-size: 0.8rem;
+        color: black;
+    }
+    .pickup-card .pickup-content .contact{
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 5rem;
+        box-shadow: 1px 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .pickup-card .pickup-content .contact .contact-info{
+        flex: 1;
+        font-size: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+    }
+    .pickup-card .pickup-content .contact .contact-info p:last-child{
+        font-size: 0.6rem;
+        color: rgba(0, 0, 0, 0.4);
+    }
+    .pickup-card .pickup-content .contact img{
+        width: 2rem;
+        aspect-ratio: 1/1;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+    .pickup-card .pickup-content .contact i{
+        aspect-ratio: 1/1;
+        width: 2rem;
+        border-radius: 50%;
+        background-color: rgb(48, 59, 49);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: white;
+    }
+    body section .map-view{
+        flex: 1;
+        height: 100%;
+        box-sizing: border-box;
+        background-color: rgba(0, 0, 0, 0.05);
+        padding: 0.5rem;
+        border-radius: 1rem;
+        overflow: hidden;
+        border-top-left-radius: 1.5rem;
+        perspective: 300px;
+    }
+    body section .map-view .iframe{
+        position: absolute;
+        top: 0%;
+        left: 0%;
+        /* background-color: rgba(250, 204, 204, 0.233); */
+        width: 100%;
+        height: 100%;
+        /* transform: translate(-50%, -50%) rotateX(10deg); */
+        z-index: 1;
+    }
+    body section .map-view .map-data{
+        width: 100%;
+        height: fit-content;
+        display: flex;
+        gap: 0.5rem;
+        background-color: white;
+        padding: 0.2rem;
+        box-sizing: border-box;
+        border-radius: 1.5rem;
+        align-items: center;
+        border-top-left-radius: 5rem;
+        border-bottom-left-radius: 5rem;
+        box-shadow: 0px 10px 20px -6px rgba(0, 0, 0, 0.2);
+        z-index: 100;
+    }
+    body section .map-view .map-data .detail{
+        flex: 1;
+        font-size: 1vw;
+        transition: all 0.4s ease;
+        font-weight: 100;
+        padding: 0.2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0rem;
+        /* background-color: rgba(0, 0, 0, 0.05); */
+    }
+    body section .map-view .map-data img{
+        width: 2.5%;
+        padding: 0.5rem;
+        background-color: rgba(0, 0, 0, 0.01);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.5s ease;
+        margin-right: 2rem;
+    }
+    body section .map-view .map-data img:hover{
+        transform: rotateZ(180deg);
+        scale: 1.1;
+    }
+    body section .map-view .map-data .detail p{
+        font-size: 0.6rem;
+        color: rgba(0, 0, 0, 0.4);
+    }
+    body section .map-view .map-data .detail h2{
+        font-weight: 400;
+    }
+
+
+    .messaging{
+        position: absolute;
+        right: 0.5rem;
+        bottom: 0.5rem;
+        height: fit-content;
+        max-height: 4rem;
+        width: 4rem;
+        gap: 0.5rem;
+        padding: 1rem;
+        box-sizing: border-box;
+        border-radius: 1.5rem;
+        border-bottom-right-radius: 0.5rem;
+        background-color: rgb(25, 28, 25);
+        box-shadow: -10px -4px 15px -5px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        z-index: 10;
+        transition: all 1s ease;
+    }
+    
+    .messaging:hover{
+        width: 35%;
+        max-height: 40rem;
+    }
+    .messaging *{
+        color: rgba(255, 255, 255, 0.8);
+    }
+    .messaging img{
+        width: 3rem;
+        aspect-ratio: 1/1;
+        object-fit: cover;
+        border-radius: 50%;
+        box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.4);
+    }
+    .messaging .contacts-list{
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        /* justify-content: center; */
+        align-items: center;
+    }
+    .messaging .contacts-list .blank{
+        width: 95%;
+        background-color: rgb(48, 48, 48);
+        height: 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: -1.5rem;
+    }
+    .messaging .contacts-list .blank:first-child{
+        background-color: rgb(34, 34, 34);
+        width: 90%;
+    }
+    .messaging .contacts-list .contact-card{
+        width: 100%;
+        display: flex;
+        padding: 0.5rem;
+        gap: 0.5rem;
+        background-color: rgb(38, 38, 38);
+        border-radius: 2rem;
+        overflow: hidden;
+        border-bottom-right-radius: 1rem;
+        align-items: stretch;
+    }
+    .messaging .contacts-list .contact-card h2{
+        font-size: 1.2rem;
+        font-weight: 400;
+    } 
+    .messaging .contacts-list .contact-card p{
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.5);
+    }
+    .messaging .contacts-list .contact-card .c-data{
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        flex: 1;
+    }
+    .messaging .contacts-list .contact-card i{
+        width: fit-content;
+        /* background-color: red; */
+        display: flex;
+        justify-content: flex-end;
+    }
+    .messaging .contacts-list .contact-card i::before{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        aspect-ratio: 1/1;
+        background-color: rgb(239, 246, 245);
+        border-radius: 50%;
+        color: black;
+        cursor: pointer;
+        border-bottom-right-radius: 0.5rem;
+    }
+    .messaging .audio-input{
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        gap: 0.5rem;
+        align-items: stretch;
+        /* padding: 0.5rem; */
+    }
+    .messaging .audio-input .input{
+        display: flex;
+        align-items: center;
+        flex: 1;
+        box-sizing: border-box;
+        padding: 0.5rem;
+        /* padding-right: 0; */
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        height: 3rem;
+        border-radius: 2rem;
+        gap: 0.5rem;
+        overflow: hidden;
+    }
+    .messaging .audio-input .input .waves{
+        display: flex;
+        gap: 0.1rem;
+        align-items: center;
+        flex: 1;
+        /* background-color: red; */
+        height: 100%;
+    }
+    .messaging .audio-input .input .waves span{
+        flex: 1;
+        border-radius: 1rem;
+        background-color: rgba(255, 255, 255, 0.6);
+    }
+    .messaging .audio-input .input .waves span:first-child{
+        height: 40%;
+    }
+    .messaging .audio-input .input .waves span[active]{
+        background-color: rgb(156, 206, 156);
+    }
+    .messaging .audio-input i{
+        height: 3rem;
+        padding-inline: 0.5rem;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        border-radius: 50%;
+        box-sizing: border-box;
+        transition: all 0.2s;
+    }
+    .messaging .audio-input .input i:last-child{
+        background-color: rgb(206, 139, 139);
+        box-sizing: border-box;
+        color: rgb(226, 223, 223);
+        padding: 0;
+        height: 100%;
+        aspect-ratio: 1/1;
+    }
+    .messaging i.record{
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        aspect-ratio: 1/1;
+    }
+    .messaging i.record:hover{
+        background-color: rgb(239, 246, 245);
+        color: black;
+    }
+    .messaging i.record:last-child:hover{
+        background-color: rgb(174, 253, 174);
+    }
+
+
+    .messaging .chatroom{
+        width: 100%;
+        height: 300px;
+        display: flex;
+        justify-content: flex-end;
+        padding-bottom: 0.5rem;
+        gap: 0.5rem;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .messaging .chatroom .recieved{
+        width: 100%;
+        height: fit-content;
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        align-items: flex-end;
+    }
+    .messaging .chatroom .recieved::before{
+        content: attr(msg);
+        width: fit-content;
+        padding: 1rem;
+        color: rgba(255, 255, 255, 0.8);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2rem;
+        border-bottom-right-radius: 0.1rem;
+        max-width: 80%;
+    }
+    .messaging .chatroom .recieved::after{
+        content: attr(time);
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.4);
+    }
+    .messaging .chatroom .sent{
+        width: 80%;
+        height: 3.5rem;
+        box-sizing: border-box;
+        padding: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-radius: 2rem;
+        border-bottom-left-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    .messaging .chatroom .sent .waves{
+        height: 100%;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        /* background-color: red; */
+    }
+    .messaging .chatroom .sent .waves span{
+        flex: 1;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 3rem;
+    }
+    .messaging .chatroom .sent .waves span[active]{
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+    .messaging .chatroom .sent i{
+        height: 100%;
+        aspect-ratio: 1/1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 0.8rem;
+        background-color: rgb(239, 246, 245);
+        color: black;
+        padding: 0;
+    }
+    .messaging .chatroom .sent::after{
+        content: attr(time);
+        position: absolute;
+        bottom: -1.3rem;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.4);
+    }
+    .messaging .cover-icon{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgb(25, 28, 25);
+        z-index: 10;
+        transition: all 0.5s ease;
+    }
+    .messaging .cover-icon::before{
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .messaging:hover .cover-icon{
+        opacity: 0;
+        pointer-events: none;
+        transition-delay: 1s;
+    }
+
+    /* 🔴 Blinking marker style */
+    .blinking-marker {
+      width: 5px;
+      height: 5px;
+      background-color: rgb(0, 153, 255);
+      border: 4px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 20px -2px rgb(0, 255, 234);
+      animation: blink 1s infinite;
+      box-sizing: border-box;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+</style>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<body>
+    <section>
+        <div class="main-data">
+            <div class="top-header">
+                <i class="fi fi-rr-arrow-up-left"></i>
+                <p>Trash Pickup</p>
+            </div>
+            <div class="pickup-locations">
+                <div class="pickup-card" active>
+                    <div class="pickup-title">
+                        <div class="main-title">
+                            <p class="hanger">Current Pickups</p>
+                            <h1>TZP0001</h1>
+                            <h4>Location A - Location B</h4>
+                        </div>
+                        <div class="btn-act">
+                            <div class="button">Complete</div>
+                        </div>
+                    </div>
+                    <div class="pickup-content">
+                        <div class="p2p">
+                            <i class="fi fi-rr-shipping-fast"><p></p></i>
+                        </div>
+
+                        <div class="pickup-data">
+                            <div class="data">
+                                <p>From</p>
+                                <h4>Location A - TZ</h4>
+                            </div>
+                            <div class="data">
+                                <p>To</p>
+                                <h4>Location B - TZ</h4>
+                            </div>
+                            <div class="data">
+                                <p>Estimate Time</p>
+                                <h4>2:30 pm</h4>
+                            </div>
+                            <div class="data">
+                                <p>Pickup Weight</p>
+                                <h4>100 kg</h4>
+                            </div>
+                        </div>
+
+                        <div class="contact">
+                            <img src="assets/dp.png">
+                            <div class="contact-info">
+                                <p>Magreth Iyana</p>
+                                <p>Pickup Leader</p>
+                            </div>
+                            <i class="fi fi-rr-phone-flip"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="pickup-card" active>
+                    <div class="pickup-title">
+                        <div class="main-title">
+                            <p class="hanger">Current Pickups</p>
+                            <h1>TZP0001</h1>
+                            <h4>Location A - Location B</h4>
+                        </div>
+                        <div class="btn-act">
+                            <div class="button">Complete</div>
+                        </div>
+                    </div>
+                    <div class="pickup-content">
+                        <div class="p2p">
+                            <i class="fi fi-rr-shipping-fast">
+                                <p style="width: 40%;"></p></i>
+                        </div>
+
+                        <div class="pickup-data">
+                            <div class="data">
+                                <p>From</p>
+                                <h4>Location A - TZ</h4>
+                            </div>
+                            <div class="data">
+                                <p>To</p>
+                                <h4>Location B - TZ</h4>
+                            </div>
+                            <div class="data">
+                                <p>Estimate Time</p>
+                                <h4>2:30 pm</h4>
+                            </div>
+                            <div class="data">
+                                <p>Pickup Weight</p>
+                                <h4>100 kg</h4>
+                            </div>
+                        </div>
+
+                        <div class="contact">
+                            <img src="assets/dp.png">
+                            <div class="contact-info">
+                                <p>Magreth Iyana</p>
+                                <p>Pickup Leader</p>
+                            </div>
+                            <i class="fi fi-rr-phone-flip"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="map-view">
+            <div class="iframe" id="map"></div>
+            <div class="map-data">
+                <img src="assets/tg.png" alt="">
+                <div class="detail">
+                    <p>Current Speed</p>
+                    <h2>0.5 km/h</h2>
+                </div>
+                <div class="detail">
+                    <p>Distance Remaining</p>
+                    <h2>0.2234 km</h2>
+                </div>
+                <div class="detail">
+                    <p>Estimated Time</p>
+                    <h2>15 min</h2>
+                </div>
+                <div class="detail">
+                    <p>Payload</p>
+                    <h2>2,993 lbs</h2>
+                </div>
+            </div>
+            <div class="messaging">
+                <i class="fi fi-rr-comment cover-icon"></i>
+
+                <div class="header">
+                    <div class="contacts-list">
+                        <div class="blank"></div>
+                        <div class="blank"></div>
+                        <div class="contact-card">
+                            <img src="assets/dp.png">
+                            <div class="c-data">
+                                <h2>Fanevesal Peter</h2>
+                                <p>Pickup Leader</p>
+                            </div>
+                            <i class="fi fi-rr-phone-flip"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="chatroom">
+                    <p class="recieved" time="2 minutes ago" msg="Wako wote kituoni."></p>
+                    <div class="sent" time="2 minutes ago">
+                        <div class="waves"></div>
+                        <i class="fi fi-rr-play"></i>
+                    </div>
+                </div>
+                <div class="audio-input">
+                    <div class="input">
+                        <div class="waves"></div>
+                        <i class="fi fi-rr-play"></i>
+                        <i class="fi fi-rr-trash"></i>
+                    </div>
+                    <i class="fi fi-rr-microphone record"></i>
+                    <i class="fi fi-rr-paper-plane record"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+<script>
+    function wavesAdd(){
+        let allWaves = document.querySelectorAll(".waves");
+        allWaves.forEach((wave)=>{
+            for(let w = 0; w < 20; w++){
+                let waveBar = document.createElement("span");
+                if(w != 0) waveBar.style.height = `${Math.random() * 100}%`;
+                wave.appendChild(waveBar);
+            };
+        });
+    }
+    function addSrc(){
+        if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        // Replace coordinates in the iframe src
+        const iframe = document.getElementById('map-frame');
+        iframe.src = `https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d10000!2d${lng}!3d${lat}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sxx!4v0000000000000`;
+        }, function(error) {
+        console.error("Location access denied or unavailable.", error);
+        });
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    }
+    function addMap(){
+        const map = L.map('map').setView([0, 0], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const blinkingIcon = L.divIcon({
+        className: 'blinking-marker',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        });
+
+        let marker = L.marker([0, 0], { icon: blinkingIcon }).addTo(map);
+
+        if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(
+            (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            marker.setLatLng([lat, lng]);
+            map.setView([lat, lng], 16);
+            },
+            (err) => {
+            alert("Geolocation error: " + err.message);
+            },
+            {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 50000
+            }
+        );
+        } else {
+        alert("Your browser does not support geolocation.");
+        }
+    }
+
+    wavesAdd();
+    addMap();
+</script>
+</html>
