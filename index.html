@@ -727,7 +727,7 @@
                         collectionPoints = JSON.parse(xhr.responseText);
                         console.log(collectionPoints);
                         document.querySelector(".loginPage").style.display = "none";
-                        addMap();
+                        addMap(data.email);
                     }else{btn.removeAttribute("disabled")};
                 }
                 xhr.send(JSON.stringify(data));
@@ -930,7 +930,8 @@
             alert("Geolocation is not supported by this browser.");
         }
     }
-    function addMap(){
+    function addMap(email){
+        const ws = new WebSocket("wss://chattroom-kdr5.onrender.com/ws");
         const map = L.map('map').setView([0, 0], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -969,6 +970,12 @@
             (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
+
+            ws.send(JSON.stringify({
+                "driver": email,
+                "lng": lng,
+                "lat": lat
+            }));
 
             marker.setLatLng([lat, lng]);
             map.setView([lat, lng], 16);
