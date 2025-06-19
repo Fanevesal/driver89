@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="assets/icons/cdn.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="shortcut icon" href="assets/bio-leaves.png" type="image/png">
 </head>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
@@ -645,9 +647,104 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
     }
+
+    body div.loginPage{
+        display: flex;
+        flex-direction: column;
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        background-color: white;
+        z-index: 10;
+        justify-content: center;
+        align-items: center;
+        gap: 0.2rem;
+    }
+    body div.loginPage input,
+    body div.loginPage button{
+        width: 300px;
+        box-sizing: border-box;
+        padding: 1rem;
+        /* text-align: center; */
+        background-color: transparent;
+        border: 1px solid hsla(216, 5%, 18%, 0.4);
+        border-radius: 1rem;
+        outline-color: rgb(127, 232, 127);
+        outline-width: 2px;
+    }
+    body div.loginPage button{
+        background-color: #2c2d30;
+        color: white;
+        cursor: pointer;
+    }
+    body div.loginPage img{
+        width: 50px;
+        margin-bottom: 2rem;
+    }
+    body div.loginPage button:active{
+        filter: brightness(1.5);
+    }
+    button:disabled{opacity: 0.5;pointer-events: none;}
 </style>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <body>
+    <div class="loginPage">
+        <img src="assets/bio-leaves.png">
+        <input type="text" placeholder="Driver's Email">
+        <input type="password" placeholder="Driver's Key">
+        <button id="authBtn">Authenticate</button>
+        <button id="installBtn">Download App</button>
+
+        <script>
+            let collectionPoints;
+            let deferredPrompt;
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'inline-block';
+            });
+
+            document.getElementById('installBtn').addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to install: ${outcome}`);
+                    deferredPrompt = null;
+                    document.getElementById('installBtn').style.display = 'none';
+                }
+            });
+
+            function reqColPts(data, btn){
+                btn.setAttribute("disabled", "");
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", "https://optibin-client.onrender.com/getPoints", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onload = ()=>{
+                    if(xhr.status == 200 && xhr.readyState == 4 && !xhr.responseText.includes("fail")){
+                        collectionPoints = JSON.parse(xhr.responseText);
+                        console.log(collectionPoints);
+                        document.querySelector(".loginPage").style.display = "none";
+                        addMap();
+                    }else{btn.removeAttribute("disabled")};
+                }
+                xhr.send(JSON.stringify(data));
+            };
+
+            let buttonAuth = document.getElementById("authBtn");
+            buttonAuth.onclick = ()=>{
+                let allInpss = document.querySelectorAll("input");
+                let dataDict = {
+                    "email":allInpss[0].value,
+                    "key":allInpss[0].value
+                }
+                reqColPts(dataDict, buttonAuth);
+            };
+        </script>
+    </div>
+
     <section>
         <div class="main-data">
             <div class="top-header">
@@ -848,6 +945,25 @@
 
         let marker = L.marker([0, 0], { icon: blinkingIcon }).addTo(map);
 
+        setTimeout(()=>{
+            let currentMarker = null;
+
+            const customIcon = L.icon({
+                iconUrl: "assets/location.png",
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+                popupAnchor: [0, -40]
+            });
+
+            collectionPoints.forEach(pt=>{
+                let pCrd = pt.geo.split(",");
+                let pLong = Number(pCrd[0]);
+                let pLat = Number(pCrd[1]);
+                currentMarker = L.marker([pLat, pLong], { icon: customIcon }).addTo(map);
+                currentMarker.bindPopup(`📍 Name: ${pt.name}<br>📍 Geo: ${pt.geo}`).openPopup();
+            });
+        }, 1000)
+
         if (navigator.geolocation) {
         navigator.geolocation.watchPosition(
             (position) => {
@@ -872,6 +988,12 @@
     }
 
     wavesAdd();
-    addMap();
+</script>
+<script>
+    // if ('serviceWorker' in navigator) {
+    //   navigator.serviceWorker.register('/sw.js')
+    //     .then(() => console.log('SW registered'))
+    //     .catch(err => console.error('SW failed', err));
+    // }
 </script>
 </html>
