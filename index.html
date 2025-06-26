@@ -930,25 +930,25 @@
             alert("Geolocation is not supported by this browser.");
         }
     }
-    function addMap(email){
+    
+    function addMap(email) {
         const ws = new WebSocket("wss://chattroom-kdr5.onrender.com/ws");
+
         const map = L.map('map').setView([0, 0], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         const blinkingIcon = L.divIcon({
-        className: 'blinking-marker',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
+            className: 'blinking-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
         });
 
         let marker = L.marker([0, 0], { icon: blinkingIcon }).addTo(map);
 
-        setTimeout(()=>{
-            let currentMarker = null;
-
+        setTimeout(() => {
             const customIcon = L.icon({
                 iconUrl: "assets/location.png",
                 iconSize: [40, 40],
@@ -956,43 +956,53 @@
                 popupAnchor: [0, -40]
             });
 
-            collectionPoints.forEach(pt=>{
+            collectionPoints.forEach(pt => {
                 let pCrd = pt.geo.split(",");
                 let pLong = Number(pCrd[0]);
                 let pLat = Number(pCrd[1]);
-                currentMarker = L.marker([pLat, pLong], { icon: customIcon }).addTo(map);
+                let currentMarker = L.marker([pLat, pLong], { icon: customIcon }).addTo(map);
                 currentMarker.bindPopup(`📍 Name: ${pt.name}<br>📍 Geo: ${pt.geo}`).openPopup();
             });
-        }, 1000)
+        }, 1000);
 
-        if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(
-            (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
+        ws.onopen = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
 
-            ws.send(JSON.stringify({
-                "driver": email,
-                "lng": lng,
-                "lat": lat
-            }));
+                        marker.setLatLng([lat, lng]);
+                        map.setView([lat, lng], 16);
 
-            marker.setLatLng([lat, lng]);
-            map.setView([lat, lng], 16);
-            },
-            (err) => {
-            alert("Geolocation error: " + err.message);
-            },
-            {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 50000
+                        const dataJSON = {
+                            driver: email,
+                            lng,
+                            lat
+                        };
+
+                        ws.send(JSON.stringify(dataJSON));
+                        console.log("Sent location via WS:", dataJSON);
+                    },
+                    (err) => {
+                        alert("Geolocation error: " + err.message);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 0,
+                        timeout: 50000
+                    }
+                );
+            } else {
+                alert("Your browser does not support geolocation.");
             }
-        );
-        } else {
-        alert("Your browser does not support geolocation.");
-        }
+        };
+
+        ws.onerror = (e) => {
+            console.error("WebSocket error:", e);
+        };
     }
+
 
     wavesAdd();
 </script>
